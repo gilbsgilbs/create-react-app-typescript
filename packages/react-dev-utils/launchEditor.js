@@ -28,19 +28,37 @@ function isTerminalEditor(editor) {
 // of the app every time
 const COMMON_EDITORS_OSX = {
   '/Applications/Atom.app/Contents/MacOS/Atom': 'atom',
-  '/Applications/Atom Beta.app/Contents/MacOS/Atom Beta': '/Applications/Atom Beta.app/Contents/MacOS/Atom Beta',
+  '/Applications/Atom Beta.app/Contents/MacOS/Atom Beta':
+    '/Applications/Atom Beta.app/Contents/MacOS/Atom Beta',
   '/Applications/Brackets.app/Contents/MacOS/Brackets': 'brackets',
-  '/Applications/Sublime Text.app/Contents/MacOS/Sublime Text': '/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl',
-  '/Applications/Sublime Text 2.app/Contents/MacOS/Sublime Text 2': '/Applications/Sublime Text 2.app/Contents/SharedSupport/bin/subl',
+  '/Applications/Sublime Text.app/Contents/MacOS/Sublime Text':
+    '/Applications/Sublime Text.app/Contents/SharedSupport/bin/subl',
+  '/Applications/Sublime Text Dev.app/Contents/MacOS/Sublime Text':
+    '/Applications/Sublime Text Dev.app/Contents/SharedSupport/bin/subl',
+  '/Applications/Sublime Text 2.app/Contents/MacOS/Sublime Text 2':
+    '/Applications/Sublime Text 2.app/Contents/SharedSupport/bin/subl',
   '/Applications/Visual Studio Code.app/Contents/MacOS/Electron': 'code',
-  '/Applications/AppCode.app/Contents/MacOS/appcode': '/Applications/AppCode.app/Contents/MacOS/appcode',
-  '/Applications/CLion.app/Contents/MacOS/clion': '/Applications/CLion.app/Contents/MacOS/clion',
-  '/Applications/IntelliJ IDEA.app/Contents/MacOS/idea': '/Applications/IntelliJ IDEA.app/Contents/MacOS/idea',
-  '/Applications/PhpStorm.app/Contents/MacOS/phpstorm': '/Applications/PhpStorm.app/Contents/MacOS/phpstorm',
-  '/Applications/PyCharm.app/Contents/MacOS/pycharm': '/Applications/PyCharm.app/Contents/MacOS/pycharm',
-  '/Applications/PyCharm CE.app/Contents/MacOS/pycharm': '/Applications/PyCharm CE.app/Contents/MacOS/pycharm',
-  '/Applications/RubyMine.app/Contents/MacOS/rubymine': '/Applications/RubyMine.app/Contents/MacOS/rubymine',
-  '/Applications/WebStorm.app/Contents/MacOS/webstorm': '/Applications/WebStorm.app/Contents/MacOS/webstorm',
+  '/Applications/Visual Studio Code - Insiders.app/Contents/MacOS/Electron':
+    'code-insiders',
+  '/Applications/AppCode.app/Contents/MacOS/appcode':
+    '/Applications/AppCode.app/Contents/MacOS/appcode',
+  '/Applications/CLion.app/Contents/MacOS/clion':
+    '/Applications/CLion.app/Contents/MacOS/clion',
+  '/Applications/IntelliJ IDEA.app/Contents/MacOS/idea':
+    '/Applications/IntelliJ IDEA.app/Contents/MacOS/idea',
+  '/Applications/PhpStorm.app/Contents/MacOS/phpstorm':
+    '/Applications/PhpStorm.app/Contents/MacOS/phpstorm',
+  '/Applications/PyCharm.app/Contents/MacOS/pycharm':
+    '/Applications/PyCharm.app/Contents/MacOS/pycharm',
+  '/Applications/PyCharm CE.app/Contents/MacOS/pycharm':
+    '/Applications/PyCharm CE.app/Contents/MacOS/pycharm',
+  '/Applications/RubyMine.app/Contents/MacOS/rubymine':
+    '/Applications/RubyMine.app/Contents/MacOS/rubymine',
+  '/Applications/WebStorm.app/Contents/MacOS/webstorm':
+    '/Applications/WebStorm.app/Contents/MacOS/webstorm',
+  '/Applications/MacVim.app/Contents/MacOS/MacVim': 'mvim',
+  '/Applications/GoLand.app/Contents/MacOS/goland':
+    '/Applications/GoLand.app/Contents/MacOS/goland',
 };
 
 const COMMON_EDITORS_LINUX = {
@@ -55,6 +73,7 @@ const COMMON_EDITORS_LINUX = {
   sublime_text: 'sublime_text',
   vim: 'vim',
   'webstorm.sh': 'webstorm',
+  'goland.sh': 'goland',
 };
 
 const COMMON_EDITORS_WIN = [
@@ -75,6 +94,8 @@ const COMMON_EDITORS_WIN = [
   'rubymine64.exe',
   'webstorm.exe',
   'webstorm64.exe',
+  'goland.exe',
+  'goland64.exe',
 ];
 
 function addWorkspaceToArgumentsIfExists(args, workspace) {
@@ -127,6 +148,8 @@ function getArgumentsForLineNumber(editor, fileName, lineNumber, workspace) {
     case 'rubymine64':
     case 'webstorm':
     case 'webstorm64':
+    case 'goland':
+    case 'goland64':
       return addWorkspaceToArgumentsIfExists(
         ['--line', lineNumber, fileName],
         workspace
@@ -159,23 +182,19 @@ function guessEditor() {
         }
       }
     } else if (process.platform === 'win32') {
+      // Some processes need elevated rights to get its executable path.
+      // Just filter them out upfront. This also saves 10-20ms on the command.
       const output = child_process
-        .execSync('powershell -Command "Get-Process | Select-Object Path"', {
-          stdio: ['pipe', 'pipe', 'ignore'],
-        })
+        .execSync(
+          'wmic process where "executablepath is not null" get executablepath'
+        )
         .toString();
       const runningProcesses = output.split('\r\n');
       for (let i = 0; i < runningProcesses.length; i++) {
-        // `Get-Process` sometimes returns empty lines
-        if (!runningProcesses[i]) {
-          continue;
-        }
-
-        const fullProcessPath = runningProcesses[i].trim();
-        const shortProcessName = path.basename(fullProcessPath);
-
-        if (COMMON_EDITORS_WIN.indexOf(shortProcessName) !== -1) {
-          return [fullProcessPath];
+        const processPath = runningProcesses[i].trim();
+        const processName = path.basename(processPath);
+        if (COMMON_EDITORS_WIN.indexOf(processName) !== -1) {
+          return [processPath];
         }
       }
     } else if (process.platform === 'linux') {

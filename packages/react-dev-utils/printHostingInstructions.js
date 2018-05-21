@@ -22,6 +22,44 @@ function printHostingInstructions(
   const publicPathname = url.parse(publicPath).pathname;
   if (publicUrl && publicUrl.indexOf('.github.io/') !== -1) {
     // "homepage": "http://user.github.io/project"
+    const publicPathname = url.parse(publicPath).pathname;
+    const hasDeployScript = typeof appPackage.scripts.deploy !== 'undefined';
+    printBaseMessage(buildFolder, publicPathname);
+
+    printDeployInstructions(publicUrl, hasDeployScript, useYarn);
+  } else if (publicPath !== '/') {
+    // "homepage": "http://mywebsite.com/project"
+    printBaseMessage(buildFolder, publicPath);
+  } else {
+    // "homepage": "http://mywebsite.com"
+    //   or no homepage
+    printBaseMessage(buildFolder, publicUrl);
+
+    printStaticServerInstructions(buildFolder, useYarn);
+  }
+  console.log();
+  console.log('Find out more about deployment here:');
+  console.log();
+  console.log(`  ${chalk.yellow('http://bit.ly/CRA-deploy')}`);
+  console.log();
+}
+
+function printBaseMessage(buildFolder, hostingLocation) {
+  console.log(
+    `The project was built assuming it is hosted at ${chalk.green(
+      hostingLocation || 'the server root'
+    )}.`
+  );
+  console.log(
+    `You can control this with the ${chalk.green(
+      'homepage'
+    )} field in your ${chalk.cyan('package.json')}.`
+  );
+
+  if (!hostingLocation) {
+    console.log('For example, add this to build it for GitHub Pages:');
+    console.log();
+
     console.log(
       `The project was built assuming it is hosted at ${chalk.green(publicPathname)}.`
     );

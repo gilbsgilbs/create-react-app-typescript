@@ -129,7 +129,7 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
   // recompiling a bundle. WebpackDevServer takes care to pause serving the
   // bundle, so if you refresh, it'll wait instead of serving the old one.
   // "invalid" is short for "bundle invalidated", it doesn't imply any errors.
-  compiler.plugin('invalid', () => {
+  compiler.hooks.invalid.tap('invalid', () => {
     if (isInteractive) {
       clearConsole();
     }
@@ -140,7 +140,7 @@ function createCompiler(webpack, config, appName, urls, useYarn) {
 
   // "done" event fires when Webpack has finished recompiling the bundle.
   // Whether or not you have warnings or errors, you will get this event.
-  compiler.plugin('done', stats => {
+  compiler.hooks.done.tap('done', stats => {
     if (isInteractive) {
       clearConsole();
     }
@@ -315,7 +315,10 @@ function prepareProxy(proxy, appPublicFolder) {
         // For single page apps, we generally want to fallback to /index.html.
         // However we also want to respect `proxy` for API calls.
         // So if `proxy` is specified as a string, we need to decide which fallback to use.
-        // We use a heuristic: if request `accept`s text/html, we pick /index.html.
+        // We use a heuristic: We want to proxy all the requests that are not meant
+        // for static assets and as all the requests for static assets will be using
+        // `GET` method, we can proxy all non-`GET` requests.
+        // For `GET` requests, if request `accept`s text/html, we pick /index.html.
         // Modern browsers include text/html into `accept` header when navigating.
         // However API calls like `fetch()` won’t generally accept text/html.
         // If this heuristic doesn’t work well for you, use a custom `proxy` object.

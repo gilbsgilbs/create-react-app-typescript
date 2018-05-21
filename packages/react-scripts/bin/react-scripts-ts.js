@@ -8,6 +8,13 @@
 
 'use strict';
 
+// Makes the script crash on unhandled rejections instead of silently
+// ignoring them. In the future, promise rejections that are not handled will
+// terminate the Node.js process with a non-zero exit code.
+process.on('unhandledRejection', err => {
+  throw err;
+});
+
 const spawn = require('react-dev-utils/crossSpawn');
 const args = process.argv.slice(2);
 
@@ -51,5 +58,9 @@ switch (script) {
   default:
     console.log('Unknown script "' + script + '".');
     console.log('Perhaps you need to update react-scripts-ts?');
+    console.log('Perhaps you need to update react-scripts?');
+    console.log(
+      'See: https://github.com/wmonk/create-react-app-typescript/blob/master/packages/react-scripts/template/README.md#updating-to-new-releases'
+    );
     break;
 }
